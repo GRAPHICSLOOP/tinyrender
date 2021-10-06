@@ -36,42 +36,6 @@ void modelView(Vec3f location, Vec3f rotation)
 
 void perspective(float near, float far, float fov, float aspect)
 {
-    /*
-    fov = PI / 180 * (fov / 2);
-
-    float n, f, l, r, t, b;
-
-    n = near;
-    f = far;
-    t = -tan(fov) * n;
-    b = -t;
-    r = aspect * t;
-    l = -r;
-
-    Matrix m_scale = Matrix::identity();
-    Matrix m_location = Matrix::identity();
-    Matrix m_ortho = Matrix::identity();
-    Matrix m_persp = Matrix::identity();
-
-    m_scale[0][0] = 2 / (r - l);
-    m_scale[1][1] = 2 / (t - b);
-    m_scale[2][2] = 2 / (n - f);
-
-    m_location[0][3] = -(r + l) / 2;
-    m_location[1][3] = -(t + b) / 2;
-    m_location[2][3] = -(n + f) / 2;
-
-    m_ortho = m_scale * m_location;
-
-    m_persp[0][0] = n;
-    m_persp[1][1] = n;
-    m_persp[2][2] = n + f;
-    m_persp[2][3] = -(n * f);
-    m_persp[3][2] = 1;
-    m_persp[3][3] = 0;
-
-    Perspective = m_ortho * m_persp;
-    */
     float n, f;
 
     n = near;
@@ -217,8 +181,6 @@ Vec3f barycentricCoord(const Vec4f* vertex, const Vec2f& point)
     return Vec3f(alpha, beta, gama);
 }
 
-TGAColor white(255, 255, 255, 255);
-
 void triangle(const Vec4f* vertex, IShader& shader, TGAImage& image, zbuffer& zbuffer)
 {
     int x_boundingBoxMax = (int)(std::max((std::max(vertex[0][0], vertex[1][0])), vertex[2][0]));
@@ -243,6 +205,7 @@ void triangle(const Vec4f* vertex, IShader& shader, TGAImage& image, zbuffer& zb
             bc.x /= vertex[0][3];
             bc.y /= vertex[1][3];
             bc.z /= vertex[2][3];
+
             float zn = 1 / (bc[0] + bc[1] + bc[2]);
 
             float zOrder = (vertex[0][2] * bc.x + vertex[1][2] * bc.y + vertex[2][2] * bc.z) * zn;
@@ -251,7 +214,7 @@ void triangle(const Vec4f* vertex, IShader& shader, TGAImage& image, zbuffer& zb
 
             TGAColor color;
 
-            if (shader.fragment(Vec2i(x, y), bc, color))
+            if (shader.fragment(bc, color))
             {
                 zbuffer.set(x, y, zOrder);
                 image.set(x, y, color);
