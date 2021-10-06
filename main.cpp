@@ -25,7 +25,7 @@ const int height = 800;
 
 Vec3f lightDir(0, 0, -1);
 
-struct sampleShader : IShader
+struct SimpleShader : IShader
 {
     Vec2f uv[3];
 
@@ -41,7 +41,7 @@ struct sampleShader : IShader
         return ver;
     }
 
-    virtual bool fragment(Vec2i index, Vec3f barycentricCoord, TGAColor& color)
+    virtual bool fragment(Vec3f barycentricCoord, TGAColor& color)
     {
         float zn = 1 / (barycentricCoord[0] + barycentricCoord[1] + barycentricCoord[2]);
         Vec2f bar_uv = (uv[0] * barycentricCoord[0] + uv[1] * barycentricCoord[1] + uv[2] * barycentricCoord[2]) * zn;
@@ -74,7 +74,7 @@ struct GouraudShader : IShader
         return ver;
     }
 
-    virtual bool fragment(Vec2i index, Vec3f barycentricCoord, TGAColor& color)
+    virtual bool fragment(Vec3f barycentricCoord, TGAColor& color)
     {
         float zn = 1 / (barycentricCoord[0] + barycentricCoord[1] + barycentricCoord[2]);
         float light;
@@ -123,7 +123,7 @@ struct ShadowBufferShader : IShader
         return ver;
     }
 
-    virtual bool fragment(Vec2i index, Vec3f barycentricCoord, TGAColor& color)
+    virtual bool fragment(Vec3f barycentricCoord, TGAColor& color)
     {
         float zn = 1 / (barycentricCoord[0] + barycentricCoord[1] + barycentricCoord[2]);
 
@@ -166,7 +166,7 @@ struct ShadowShader : IShader
         return ver;
     }
 
-    virtual bool fragment(Vec2i index, Vec3f barycentricCoord, TGAColor& color)
+    virtual bool fragment(Vec3f barycentricCoord, TGAColor& color)
     {
         float zn = 1 / (barycentricCoord[0] + barycentricCoord[1] + barycentricCoord[2]);
         Vec2f bar_uv = (uv[0] * barycentricCoord[0] + uv[1] * barycentricCoord[1] + uv[2] * barycentricCoord[2]) * zn;
@@ -215,7 +215,7 @@ struct flootShader : IShader
         return ver;
     }
 
-    virtual bool fragment(Vec2i index, Vec3f barycentricCoord, TGAColor& color)
+    virtual bool fragment(Vec3f barycentricCoord, TGAColor& color)
     {
         float zn = 1 / (barycentricCoord[0] + barycentricCoord[1] + barycentricCoord[2]);
         Vec2f bar_uv = (uv[0] * barycentricCoord.x + uv[1] * barycentricCoord.y + uv[2] * barycentricCoord.z) * zn;

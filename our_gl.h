@@ -22,7 +22,7 @@ struct IShader
 {
     virtual ~IShader() {};
     virtual Vec4f vertex(int iface, int nthvert) = 0;
-    virtual bool fragment(Vec2i index, Vec3f barycentricCoord, TGAColor& color) = 0;
+    virtual bool fragment(Vec3f barycentricCoord, TGAColor& color) = 0;
 };
 
 struct zbuffer

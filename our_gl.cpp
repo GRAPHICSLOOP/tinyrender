@@ -251,7 +251,7 @@ void triangle(const Vec4f* vertex, IShader& shader, TGAImage& image, zbuffer& zb
 
             TGAColor color;
 
-            if (shader.fragment(Vec2i(x, y), bc, color))
+            if (shader.fragment(bc, color))
             {
                 zbuffer.set(x, y, zOrder);
                 image.set(x, y, color);
