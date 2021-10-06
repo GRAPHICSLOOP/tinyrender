@@ -103,7 +103,7 @@ struct ShadowShader : IShader
         unsigned char zbuffer = ((1 + shadowFragment[2]) * 255);
         unsigned char shadowbufferzbuffer = ShadowBuffer->get(shadowFragment[0], shadowFragment[1])[0];
 
-        bool isShadow = zbuffer  < shadowbufferzbuffer * 0.98;
+        bool isShadow = zbuffer  < shadowbufferzbuffer ;
         if (isShadow)
         {
             color = model->diffuse(bar_uv) * 0.5;
