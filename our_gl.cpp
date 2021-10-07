@@ -250,7 +250,6 @@ void triangle(const Vec4f* vertex, IShader& shader, TGAImage& image, zbuffer& zb
             if (zOrder < zbuffer.get(x, y)) continue;
 
             TGAColor color;
-
             if (shader.fragment(bc, color))
             {
                 zbuffer.set(x, y, zOrder);

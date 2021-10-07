@@ -25,7 +25,7 @@ const int height = 800;
 
 Vec3f lightDir(0, 0, -1);
 
-struct ShadowBufferShader : IShader
+struct ZBufferShader : IShader
 {
     Vec4f vertex_pos[3];
 
@@ -44,10 +44,9 @@ struct ShadowBufferShader : IShader
     virtual bool fragment(Vec3f barycentricCoord, TGAColor& color)
     {
         float zn = 1 / (barycentricCoord[0] + barycentricCoord[1] + barycentricCoord[2]);
+        Vec4f fragmentCoord = (vertex_pos[0] * barycentricCoord[0] + vertex_pos[1] * barycentricCoord[1] + vertex_pos[2] * barycentricCoord[2]) * zn;
 
-        float bar_z = (vertex_pos[0][2] * barycentricCoord.x + vertex_pos[1][2] * barycentricCoord.y + vertex_pos[2][2] * barycentricCoord.z) * zn;
-
-        bar_z = (1 + bar_z);
+        float bar_z = (1 + fragmentCoord[2]);
         color = TGAColor(255, 255, 255, 255) * bar_z;
 
         return true;
@@ -57,7 +56,7 @@ struct ShadowBufferShader : IShader
 
 struct ShadowShader : IShader
 {
-    TGAImage* ShadowBuffer;
+    zbuffer* ShadowBuffer;
     Vec4f vertex_pos[3];
     Matrix shadowMatrix;
     Vec2f uv[3];
@@ -70,16 +69,6 @@ struct ShadowShader : IShader
         float temp = ver[3];
         ver = ver / temp;
         ver[3] = temp;
-
-
-        //Vec4f m = ver;
-        //m = m*temp;
-        //m[3] = temp;
-        //Matrix M = Viewport * NDCView * Perspective * CameraView * ModelView;
-        //Vec4f mm = M * M.invert() * m;
-        //mm = mm / temp;
-        //mm[3] = temp;
-
         vertex_pos[nthvert] = ver;
         return ver;
     }
@@ -90,27 +79,23 @@ struct ShadowShader : IShader
         Vec2f bar_uv = (uv[0] * barycentricCoord[0] + uv[1] * barycentricCoord[1] + uv[2] * barycentricCoord[2]) * zn;
         
 
-        Vec4f screenFragment = (vertex_pos[0] * barycentricCoord[0] + vertex_pos[1] * barycentricCoord[1] + vertex_pos[2] * barycentricCoord[2]) * zn;
-        float temp = screenFragment[3];
-        screenFragment = screenFragment * temp;
-        screenFragment[3] = temp;
+        Vec4f fragmentCoord = (vertex_pos[0] * barycentricCoord[0] + vertex_pos[1] * barycentricCoord[1] + vertex_pos[2] * barycentricCoord[2]) * zn;
+        float temp = fragmentCoord[3];
+        fragmentCoord = fragmentCoord * temp;
+        fragmentCoord[3] = temp;
 
-        Vec4f shadowFragment = shadowMatrix * screenFragment;
+        Vec4f shadowFragment = shadowMatrix * fragmentCoord;
         temp = shadowFragment[3];
         shadowFragment = shadowFragment / temp;
         shadowFragment[3] = temp;
 
-        unsigned char zbuffer = ((1 + shadowFragment[2]) * 255);
-        unsigned char shadowbufferzbuffer = ShadowBuffer->get(shadowFragment[0], shadowFragment[1])[0];
+        float fragmentZBuffer = shadowFragment[2];
+        Vec2i index = Vec2i(shadowFragment[0]+0.0001, shadowFragment[1] + 0.0001); // 这里加上一点偏移是为了确保索引尽量正确，因为数据转换之后有一点丢失
+        float bia = 0.009;
+        float shadowbufferzbuffer = ShadowBuffer->get(index[0], index[1]) - bia;
+        float shadow = .5 + .5 * (shadowbufferzbuffer < fragmentZBuffer); // 0.5 代表阴影的时候
+        color = model->diffuse(bar_uv) * shadow;
 
-        int bia = -1;
-        bool isShadow = zbuffer  < shadowbufferzbuffer + bia;
-        if (isShadow)
-        {
-            color = model->diffuse(bar_uv) * 0.5;
-            return true;
-        }
-        color = model->diffuse(bar_uv);
         return true;
     }
 };
@@ -125,34 +110,31 @@ int main(int argc, char** argv) {
 
     TGAImage image(width, height, TGAImage::RGB);
     TGAImage ShaderBuffer(width, height, TGAImage::RGB);
-    zbuffer zbuffer(width, height);
     lightDir.normalize();
     Vec4f vertex[3];
 
-    ShadowBufferShader ShadowBufferShader;
-    zbuffer.clear();
-    modelView(Vec3f(0, 0, 0), Vec3f(0, 0, 0));
+    ZBufferShader ZBufferShader;
     cameraView(Vec3f(0, 4, 4), Vec3f(45, 180, 0));
     perspective(-1, -10.f, 45, 1);
     ndcView(-1, -10.f, 45, 1);
     viewport(width, height);
 
+    zbuffer shadowBuffer(width, height);
     for (int i = 0; i < model->nfaces(); i++)
     {
         std::vector<int> face = model->face(i);
         for (int j = 0; j < 3; j++)
         {
-            vertex[j] = ShadowBufferShader.vertex(i, j);
+            vertex[j] = ZBufferShader.vertex(i, j);
         }
-        triangle(vertex, ShadowBufferShader, ShaderBuffer, zbuffer);
+        triangle(vertex, ZBufferShader, ShaderBuffer, shadowBuffer);
     }
     ShaderBuffer.flip_vertically(); // i want to have the origin at the left bottom corner of the image
-    ShaderBuffer.write_tga_file("ShaderBuffer.tga");
-    ShaderBuffer.flip_vertically(); // 翻转回去 不然阴影贴图会受到影响
+    ShaderBuffer.write_tga_file("ZBuffer.tga");
     Matrix ShadowMatrix = Viewport * NDCView * Perspective * CameraView * ModelView;
 
 
-    zbuffer.clear();
+    zbuffer zbuffer(width, height);
     modelView(Vec3f(0, 0, 0), Vec3f(0, 0, 0));
     cameraView(Vec3f(0, 0, 4), Vec3f(0, 180, 0));
     perspective(-1, -10.f, 45, 1);
@@ -160,7 +142,7 @@ int main(int argc, char** argv) {
     viewport(width, height);
 
     ShadowShader ShadowShader;
-    ShadowShader.ShadowBuffer = &ShaderBuffer;
+    ShadowShader.ShadowBuffer = &shadowBuffer;
     ShadowShader.shadowMatrix = ShadowMatrix * ((Viewport * NDCView * Perspective * CameraView * ModelView).invert());
     for (int i = 0; i < model->nfaces(); i++)
     {
