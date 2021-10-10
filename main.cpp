@@ -4,7 +4,6 @@
 #include "model.h"
 #include "geometry.h"
 #include "our_gl.h"
-
 float* depthBuffer = NULL;
 
 Matrix ModelView = Matrix::identity();

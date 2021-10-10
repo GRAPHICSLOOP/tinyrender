@@ -17,6 +17,7 @@ void ndcView(float near, float far, float fov, float aspect);
 void orthographic(float near, float far, float fov, float aspect, float width);
 void viewport(int width, int height);
 void cameraView(Vec3f location, Vec3f rotation);
+Matrix lookat(Vec3f eye, Vec3f center, Vec3f up);
 
 struct IShader
 {

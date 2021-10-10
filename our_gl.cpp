@@ -200,6 +200,22 @@ void cameraView(Vec3f location, Vec3f rotation)
     CameraView = r_view * t_view;
 }
 
+Matrix lookat(Vec3f eye, Vec3f center, Vec3f up) 
+{
+    Vec3f z = (eye - center).normalize();
+    Vec3f x = cross(up, z).normalize();
+    Vec3f y = cross(z, x).normalize();
+    Matrix Minv = Matrix::identity();
+    Matrix Tr = Matrix::identity();
+    for (int i = 0; i < 3; i++) {
+        Minv[0][i] = x[i];
+        Minv[1][i] = y[i];
+        Minv[2][i] = -z[i];
+        Tr[i][3] = -center[i];
+    }
+    return Minv * Tr;
+}
+
 void viewport(int width, int height)
 {
     Viewport = Matrix::identity();
